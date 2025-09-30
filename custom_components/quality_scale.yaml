@@ -1,0 +1,9 @@
+rules:
+  config-flow: done
+  entity-unique-id: done
+  action-setup: done
+  entity-unavailable: done
+  parallel-updates: done
+  devices: done
+  diagnostics: done
+  strict-typing: done

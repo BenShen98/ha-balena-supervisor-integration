@@ -1,0 +1,10 @@
+control_container:
+  name: Control container
+  description: Start, stop, or restart a container by appid.
+  fields:
+    serviceName:
+      description: The service name of the container.
+      example: "debugger"
+    action:
+      description: Action to perform ("start-service", "stop-service", "restart-service").
+      example: "start-service"

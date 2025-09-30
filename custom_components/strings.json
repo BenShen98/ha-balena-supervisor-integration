@@ -1,0 +1,25 @@
+{
+  "entity": {
+    "sensor": {
+      "container_status": {
+        "name": "Container status"
+      }
+    }
+  },
+  "services": {
+    "control_container": {
+      "name": "Control container",
+      "description": "Start, stop, or restart a container by appid.",
+      "fields": {
+        "serviceName": {
+          "name": "Service name",
+          "description": "The service name of the container."
+        },
+        "action": {
+          "name": "Action",
+          "description": "Action to perform (start-service, stop-service, restart-service)."
+        }
+      }
+    }
+  }
+}
