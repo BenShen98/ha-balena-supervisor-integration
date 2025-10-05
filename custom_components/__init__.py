@@ -75,6 +75,7 @@ async def async_setup_entry(
     )
     coordinator = BalenaSupervisorStateCoordinator(hass, config_entry, client)
     await coordinator.async_refresh()
+    coordinator.start_burst_refresh()
 
     # abort if cannot fetch initial data from API
     if coordinator.last_update_success is False:

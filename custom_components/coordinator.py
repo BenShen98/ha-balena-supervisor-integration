@@ -3,6 +3,7 @@ import logging
 import aiohttp
 
 from homeassistant.core import HomeAssistant, callback
+from homeassistant.helpers.event import async_call_later
 from homeassistant.exceptions import ServiceValidationError
 from homeassistant.helpers.update_coordinator import (
     DataUpdateCoordinator,
@@ -58,6 +59,10 @@ class BalenaSupervisorApiClient:
 class BalenaSupervisorStateCoordinator(DataUpdateCoordinator[BalenaAppState]):
     """Class to buffer current state in type of BalenaAppState."""
 
+    _DEFAULT_UPDATE_INTERVAL = timedelta(minutes=5)
+    _BURST_UPDATE_INTERVAL = timedelta(seconds=10)
+    _BURST_DURATION = timedelta(seconds=90)
+
     def __init__(
         self,
         hass: HomeAssistant,
@@ -69,12 +74,13 @@ class BalenaSupervisorStateCoordinator(DataUpdateCoordinator[BalenaAppState]):
             hass,
             logger=_LOGGER,
             name="balena_supervisor",
-            update_interval=timedelta(minutes=5),
+            update_interval=self._DEFAULT_UPDATE_INTERVAL,
             config_entry=config_entry,
             update_method=self._async_update_data,
         )
         self.client = client
         self.app_id: int | None = None  # type: int | None
+        self._burst_unsub: callable | None = None
 
     async def _async_update_data(self) -> BalenaAppState:
         try:
@@ -84,6 +90,34 @@ class BalenaSupervisorStateCoordinator(DataUpdateCoordinator[BalenaAppState]):
             raise UpdateFailed(f"Error communicating with API: {err}") from err
         else:
             return data
+
+    async def post_container_service(
+        self, app_id: int, service_name: str, action: str
+    ) -> None:
+        """Call post_container_service and burst refresh interval for _BURST_DURATION seconds."""
+        await self.client.post_container_service(app_id, service_name, action)
+        self.start_burst_refresh()
+
+    @callback
+    def start_burst_refresh(
+        self,
+        interval: timedelta = _BURST_UPDATE_INTERVAL,
+        duration: timedelta = _BURST_DURATION,
+    ) -> None:
+        """Temporarily increase refresh rate to every interval for duration."""
+        if self._burst_unsub is not None:
+            self._burst_unsub()
+            self._burst_unsub = None
+
+        self.update_interval = interval
+        self.async_update_listeners()  # Notify listeners of interval change
+
+        @callback
+        def _restore_interval(now):
+            self.update_interval = self._DEFAULT_UPDATE_INTERVAL
+            self._burst_unsub = None
+
+        self._burst_unsub = async_call_later(self.hass, duration, _restore_interval)
 
     @callback
     def get_service_data(self, service_name: str) -> BalenaServiceState | None:
