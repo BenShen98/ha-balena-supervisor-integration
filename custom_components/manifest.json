@@ -4,8 +4,9 @@
   "documentation": "https://docs.balena.io/reference/supervisor/supervisor-api",
   "codeowners": ["@your_github"],
   "requirements": ["aiohttp"],
-  "config_flow": false,
-  "integration_type": "service",
+  "config_flow": true,
+  "single_config_entry": true,
+  "integration_type": "device",
   "iot_class": "cloud_polling",
   "version": "0.0.1"
 }
