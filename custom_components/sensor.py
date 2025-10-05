@@ -2,7 +2,6 @@
 
 from homeassistant.core import HomeAssistant
 from homeassistant.helpers.entity_platform import AddEntitiesCallback
-from . import BalenaContainerEntity
 from .const import DOMAIN
 
 

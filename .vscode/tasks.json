@@ -1,0 +1,16 @@
+{
+  "version": "2.0.0",
+  "tasks": [
+    {
+      "label": "Mock Balena Supervisor",
+      "type": "shell",
+      "command": "${command:python.interpreterPath} ./script/mock_balena_supervisor.py",
+      "group": "test",
+      "presentation": {
+        "reveal": "silent",
+        "panel": "shared"
+      },
+      "problemMatcher": []
+    }
+  ]
+}

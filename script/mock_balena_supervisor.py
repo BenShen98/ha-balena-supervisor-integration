@@ -120,4 +120,4 @@ if __name__ == "__main__":
     host = os.environ.get("MOCK_SUPERVISOR_HOST", "0.0.0.0")
     port = int(os.environ.get("BALENA_SUPERVISOR_PORT", "8080"))
     auth_key = os.environ.get("BALENA_SUPERVISOR_API_KEY", "testkey")
-    uvicorn.run("mock_balena:app", host=host, port=port, reload=True)
+    uvicorn.run("mock_balena_supervisor:app", host=host, port=port, reload=True)
