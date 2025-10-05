@@ -17,10 +17,9 @@ from homeassistant.helpers import config_validation as cv
 from homeassistant.components import websocket_api
 from homeassistant.config_entries import ConfigEntry
 
-from .const import DOMAIN, DATA_COMPONENT
+from .const import DOMAIN, DATA_BALENA
 from .coordinator import BalenaSupervisorApiClient, BalenaSupervisorStateCoordinator
-from .entity import BalenaContainerEntity
-from .types import ConfigEntryRuntimeData, ConfigEntryData
+from .types import ConfigEntryRuntimeData, ConfigEntryData, HassData
 
 _LOGGER = logging.getLogger(__name__)
 
@@ -46,8 +45,7 @@ async def handle_container_service(
     entity_id = msg["entity_id"]
     action = msg["action"]
 
-    component = hass.data[DATA_COMPONENT]
-    entity = component.get_entity(entity_id)
+    entity = hass.data[DATA_BALENA].get_entity(entity_id)
 
     await entity.async_control_service(action)
 
@@ -78,36 +76,26 @@ async def async_setup_entry(
     coordinator = BalenaSupervisorStateCoordinator(hass, config_entry, client)
     await coordinator.async_refresh()
 
+    # abort if cannot fetch initial data from API
     if coordinator.last_update_success is False:
         _LOGGER.info("Failed to fetch data from Balena Supervisor API")
         return False
 
-    # setup the entity_component
-    component = EntityComponent(_LOGGER, DOMAIN, hass)
-    await component.async_setup_entry(config_entry)
-
-    # setup entities
-    self_service_name = os.getenv("BALENA_SERVICE_NAME", None)
-    entities = []
-    for service_name in coordinator.data["services"]:
-        allow_control_service = True
-        if (
-            config_entry.data.get("disable_self_control")
-            and self_service_name == service_name
-        ):
-            allow_control_service = False
-        entity = BalenaContainerEntity(service_name, coordinator, allow_control_service)
-        entities.append(entity)
-    await component.async_add_entities(entities)
-
     # setup runtime data
     config_entry.runtime_data = ConfigEntryRuntimeData(
-        entity_component=component,
         state_coordinator=coordinator,
         api_client=client,
     )
 
+    # setup hass.data
+    if DATA_BALENA not in hass.data:
+        hass.data[DATA_BALENA] = HassData()
+    hass.data[DATA_BALENA].add_config_entry(config_entry)
+
+    # invoking async_setup_entry from sensor.py
+    await hass.config_entries.async_forward_entry_setups(config_entry, ["sensor"])
+
     # register websocket command for frontend
     websocket_api.async_register_command(hass, handle_container_service)
 
-    return False
+    return True

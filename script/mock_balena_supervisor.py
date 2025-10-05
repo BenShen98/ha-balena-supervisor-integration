@@ -11,6 +11,9 @@ from pydantic import BaseModel
 import uvicorn
 from starlette.background import BackgroundTask
 from typing import Any, Dict
+import asyncio
+import random
+from fastapi.responses import JSONResponse
 
 app = FastAPI()
 
@@ -92,6 +95,18 @@ async def get_applications_state():
     return state
 
 
+async def transition_service_state(
+    service_name: str, state_sequence: list[str], delays: list[float]
+):
+    """Transition a service through a sequence of states with delays."""
+    appstate = state[appName]
+    for i, next_state in enumerate(state_sequence):
+        if i > 0:  # Skip delay before first state change
+            await asyncio.sleep(delays[i - 1])
+        appstate["services"][service_name]["status"] = next_state
+        logger.info(f"Service {service_name} transitioned to {next_state}")
+
+
 @app.post("/v2/applications/{appid}/{action}")
 async def control_application(
     appid: int, action: str, body: ContainerControlRequestBody
@@ -103,17 +118,58 @@ async def control_application(
     if action not in ["start-service", "stop-service", "restart-service"]:
         raise HTTPException(status_code=400, detail="Invalid action")
 
-    if body.serviceName not in state[appName]["services"]:
+    service_name = body.serviceName
+    if service_name not in state[appName]["services"]:
         raise HTTPException(status_code=404, detail="Service not found")
 
-    if action == "start-service":
-        state[appName]["services"][body.serviceName]["status"] = "Running"
-    elif action == "stop-service":
-        state[appName]["services"][body.serviceName]["status"] = "Stopped"
-    elif action == "restart-service":
-        state[appName]["services"][body.serviceName]["status"] = "Running"
+    current_status = state[appName]["services"][service_name]["status"]
 
-    return "OK"
+    if action == "start-service":
+        if current_status in ["Exited"]:
+            # Start a background task to transition: Exited/Stopped -> Installing -> Running
+            delays = [
+                random.uniform(0.5, 2.0)
+            ]  # Random delay between Installing and Running
+            asyncio.create_task(
+                transition_service_state(
+                    service_name, ["Installing", "Running"], delays
+                )
+            )
+            return JSONResponse(content="OK", status_code=200)
+        else:
+            return JSONResponse(
+                content="Service already running or in transition", status_code=200
+            )
+
+    elif action == "stop-service":
+        if current_status == "Running":
+            # Start a background task to transition: Running -> Stopping -> Exited -> Stopped
+            delays = [random.uniform(0.5, 1.5), random.uniform(0.5, 1.0)]
+            asyncio.create_task(
+                transition_service_state(service_name, ["Stopping", "Exited"], delays)
+            )
+            return JSONResponse(content="OK", status_code=200)
+        else:
+            return JSONResponse(
+                content="Service not running or already in transition", status_code=200
+            )
+
+    elif action == "restart-service":
+        if current_status == "Running":
+            # Start a background task to transition: Running -> Exited -> Installing -> Running
+            delays = [random.uniform(0.5, 1.0), random.uniform(1.0, 2.5)]
+            asyncio.create_task(
+                transition_service_state(
+                    service_name, ["Exited", "Installing", "Running"], delays
+                )
+            )
+            return JSONResponse(content="OK", status_code=200)
+        else:
+            return JSONResponse(
+                content="Service not running or already in transition", status_code=200
+            )
+
+    return JSONResponse(content="OK", status_code=200)
 
 
 if __name__ == "__main__":

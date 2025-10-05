@@ -1,10 +1,17 @@
-from typing import TypedDict
-from dataclasses import dataclass
-from homeassistant.helpers.entity_component import EntityComponent
+"""Type definitions for the Balena Docker integration."""
+
+from __future__ import annotations
+
+from dataclasses import dataclass, field
+from typing import TYPE_CHECKING, TypedDict
+
 import voluptuous as vol
 
+from homeassistant.config_entries import ConfigEntry
+from homeassistant.helpers.entity import Entity
 
-import homeassistant.helpers.config_validation as cv
+if TYPE_CHECKING:
+    from .coordinator import BalenaSupervisorApiClient, BalenaSupervisorStateCoordinator
 
 
 class BalenaServiceState(TypedDict):
@@ -43,6 +50,29 @@ ConfigEntryDataSchema = vol.Schema(
 class ConfigEntryRuntimeData:
     """Non-persistent runtime data to be stored in ConfigEntry.runtime_data."""
 
-    entity_component: EntityComponent
-    state_coordinator: "BalenaSupervisorStateCoordinator"
-    api_client: "BalenaSupervisorApiClient"
+    state_coordinator: BalenaSupervisorStateCoordinator
+    api_client: BalenaSupervisorApiClient
+
+
+type BalenaDockerConfigEntry = ConfigEntry[ConfigEntryRuntimeData]
+
+
+@dataclass
+class HassData:
+    """Data stored in Home Assistant's hass.data under the DOMAIN key."""
+
+    config_entries: dict[str, BalenaDockerConfigEntry] = field(default_factory=dict)
+    entities: dict[str, Entity] = field(default_factory=dict)  # key is entity_id
+
+    def add_entities(self, new_entities: list[Entity]) -> None:
+        """Add entities to the internal dict."""
+        for entity in new_entities:
+            self.entities[entity.entity_id] = entity
+
+    def add_config_entry(self, config_entry: ConfigEntry) -> None:
+        """Add a config entry to the internal dict."""
+        self.config_entries[config_entry.entry_id] = config_entry
+
+    def get_entity(self, entity_id: str) -> Entity | None:
+        """Get an entity by its entity_id."""
+        return self.entities.get(entity_id)
