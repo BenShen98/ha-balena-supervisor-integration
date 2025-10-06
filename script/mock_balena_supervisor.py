@@ -1,3 +1,4 @@
+#!/usr/bin/env python3
 """Mock Balena Supervisor API for testing Home Assistant container control.
 
 This module provides a FastAPI app that simulates the Balena Supervisor endpoints
