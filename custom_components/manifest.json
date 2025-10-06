@@ -8,5 +8,6 @@
   "single_config_entry": true,
   "integration_type": "device",
   "iot_class": "cloud_polling",
-  "version": "0.0.1"
+  "version": "0.0.1",
+  "after_dependencies": ["lovelace"]
 }

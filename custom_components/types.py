@@ -8,6 +8,7 @@ from typing import TYPE_CHECKING, TypedDict
 import voluptuous as vol
 
 from homeassistant.config_entries import ConfigEntry
+from homeassistant.core import callback
 from homeassistant.helpers.entity import Entity
 
 if TYPE_CHECKING:
@@ -36,14 +37,28 @@ class ConfigEntryData(TypedDict):
 
     connection_type: str  # "same_device_no_proxy" only for now
     disable_self_control: bool
+    auto_load_js_modules: bool
 
 
-ConfigEntryDataSchema = vol.Schema(
-    {
-        vol.Required("connection_type"): vol.In(["same_device_no_proxy"]),
-        vol.Required("disable_self_control", default=True): bool,
-    }
-)
+@callback
+def create_config_entry_data_schema(default_data: ConfigEntryData | dict) -> vol.Schema:
+    """Create the schema for the config flow and options flow."""
+    return vol.Schema(
+        {
+            vol.Required(
+                "connection_type",
+                default=default_data.get("connection_type", "same_device_no_proxy"),
+            ): vol.In(["same_device_no_proxy"]),
+            vol.Required(
+                "disable_self_control",
+                default=default_data.get("disable_self_control", True),
+            ): bool,
+            vol.Required(
+                "auto_load_js_modules",
+                default=default_data.get("auto_load_js_modules", True),
+            ): bool,
+        }
+    )
 
 
 @dataclass
@@ -52,6 +67,7 @@ class ConfigEntryRuntimeData:
 
     state_coordinator: BalenaSupervisorStateCoordinator
     api_client: BalenaSupervisorApiClient
+    js_modules: list[str] = field(default_factory=list)
 
 
 type BalenaDockerConfigEntry = ConfigEntry[ConfigEntryRuntimeData]

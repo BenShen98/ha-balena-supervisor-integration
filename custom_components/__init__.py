@@ -17,9 +17,16 @@ from homeassistant.helpers import config_validation as cv
 from homeassistant.components import websocket_api
 from homeassistant.config_entries import ConfigEntry
 
+
 from .const import DOMAIN, DATA_BALENA
 from .coordinator import BalenaSupervisorApiClient, BalenaSupervisorStateCoordinator
-from .types import ConfigEntryRuntimeData, ConfigEntryData, HassData
+from .types import (
+    BalenaDockerConfigEntry,
+    ConfigEntryRuntimeData,
+    ConfigEntryData,
+    HassData,
+)
+from .lovelace import load_js_modules, unload_js_modules
 
 _LOGGER = logging.getLogger(__name__)
 
@@ -59,7 +66,7 @@ async def async_setup(hass: HomeAssistant, config: ConfigType) -> bool:
 
 
 async def async_setup_entry(
-    hass: HomeAssistant, config_entry: ConfigEntry[ConfigEntryRuntimeData]
+    hass: HomeAssistant, config_entry: BalenaDockerConfigEntry
 ) -> bool:
     """Set up Balena Docker from a config entry."""
 
@@ -99,4 +106,34 @@ async def async_setup_entry(
     # register websocket command for frontend
     websocket_api.async_register_command(hass, handle_container_service)
 
+    # register frontend modules
+    if config_entry.data["auto_load_js_modules"]:
+        config_entry.runtime_data.js_modules = await load_js_modules(hass)
+
+    return True
+
+
+async def async_unload_entry(
+    hass: HomeAssistant, config_entry: BalenaDockerConfigEntry
+) -> bool:
+    """Unload a config entry."""
+
+    # unload platforms that were set up in async_setup_entry
+    if not await hass.config_entries.async_unload_platforms(config_entry, ["sensor"]):
+        return False
+
+    # unload lovelace JS modules that were loaded in async_setup_entry, given the config may have been updated, use the runtime data instead of config data
+    if config_entry.runtime_data.js_modules:
+        await unload_js_modules(hass, config_entry.runtime_data.js_modules)
+
+    return True
+
+
+async def async_remove_entry(
+    hass: HomeAssistant, config_entry: BalenaDockerConfigEntry
+) -> None:
+    """Remove a config entry.
+
+    Called when user click on "Delete" in the UI.
+    """
     return True
