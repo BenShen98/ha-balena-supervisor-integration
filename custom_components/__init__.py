@@ -16,6 +16,7 @@ from homeassistant.helpers.entity_component import EntityComponent
 from homeassistant.helpers import config_validation as cv
 from homeassistant.components import websocket_api
 from homeassistant.config_entries import ConfigEntry
+from homeassistant.const import Platform
 
 
 from .const import DOMAIN, DATA_BALENA
@@ -26,7 +27,7 @@ from .types import (
     ConfigEntryData,
     HassData,
 )
-from .lovelace import load_js_modules, unload_js_modules
+from .frontend import load_js_modules, unload_js_modules
 
 _LOGGER = logging.getLogger(__name__)
 
@@ -75,9 +76,11 @@ async def async_setup_entry(
         return False
 
     # setup the coordinator
+    url = os.getenv("BALENA_SUPERVISOR_ADDRESS", "http://localhost:8080")
+    _LOGGER.info("Using Balena Supervisor API URL: %s", url)
     client = BalenaSupervisorApiClient(
         async_get_clientsession(hass),
-        url=f"http://{os.getenv('BALENA_SUPERVISOR_ADDRESS', 'localhost')}:{os.getenv('BALENA_SUPERVISOR_PORT', '8080')}",
+        url=url,
         api_key=os.getenv("BALENA_SUPERVISOR_API_KEY", "testkey"),
     )
     coordinator = BalenaSupervisorStateCoordinator(hass, config_entry, client)
@@ -101,7 +104,9 @@ async def async_setup_entry(
     hass.data[DATA_BALENA].add_config_entry(config_entry)
 
     # invoking async_setup_entry from sensor.py
-    await hass.config_entries.async_forward_entry_setups(config_entry, ["sensor"])
+    await hass.config_entries.async_forward_entry_setups(
+        config_entry, [Platform.SENSOR]
+    )
 
     # register websocket command for frontend
     websocket_api.async_register_command(hass, handle_container_service)
@@ -119,7 +124,9 @@ async def async_unload_entry(
     """Unload a config entry."""
 
     # unload platforms that were set up in async_setup_entry
-    if not await hass.config_entries.async_unload_platforms(config_entry, ["sensor"]):
+    if not await hass.config_entries.async_unload_platforms(
+        config_entry, [Platform.SENSOR]
+    ):
         return False
 
     # unload lovelace JS modules that were loaded in async_setup_entry, given the config may have been updated, use the runtime data instead of config data

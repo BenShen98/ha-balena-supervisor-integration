@@ -22,28 +22,13 @@ fi
 # Get the directory containing this script
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 
-SRC_WWW="$SCRIPT_DIR/../www"
-DEST_WWW="$INSTALL_DIR/www/balena_docker"
 SRC_CC="$SCRIPT_DIR/../custom_components"
 DEST_CC="$INSTALL_DIR/custom_components/balena_docker"
 
-if [[ ! -d "$SRC_WWW" || ! -d "$SRC_CC" ]]; then
-  echo "Source www or custom_components directory not found: $SRC_WWW, $SRC_CC"
+if [[ ! -d "$SRC_CC" ]]; then
+  echo "Source custom_components directory not found: $SRC_CC"
   exit 1
 fi
-
-# Process WWW
-
-## Remove any existing www/balena_docker
-if [[ -e "$DEST_WWW" ]]; then
-  chmod -R u+w "$DEST_WWW" 2>/dev/null || true
-  rm -rf "$DEST_WWW"
-fi
-
-## Install www/balena_docker
-mkdir -p "$DEST_WWW"
-cp -r "$SRC_WWW/"* "$DEST_WWW"
-find "$DEST_WWW" -type f -exec chmod 444 {} +
 
 # Process custom_components
 

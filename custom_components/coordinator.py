@@ -28,7 +28,7 @@ class BalenaSupervisorApiClient:
     async def get_state(self) -> BalenaAppState:
         """Fetch the app state, using https://docs.balena.io/reference/supervisor/supervisor-api/#get-v2applicationsstate endpoint."""
         async with self.session.get(
-            f"{self._url}/v2/applications/state", params={"apiKey": self._api_key}
+            f"{self._url}/v2/applications/state", params={"apikey": self._api_key}
         ) as resp:
             resp_json = await resp.json()
 
