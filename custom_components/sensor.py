@@ -113,7 +113,7 @@ class BalenaContainerEntity(BalenaBaseEntity):
             return {
                 "release_id": service_data["releaseId"],
                 "download_progress": service_data["downloadProgress"],
-                "custom_ui_more_info": "more-info-balena_docker",
+                # "custom_ui_more_info": "more-info-balena_docker",
                 "icon": "mdi:play-circle-outline"
                 if service_data["status"] == "Running"
                 else "mdi:stop-circle-outline",
