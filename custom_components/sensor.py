@@ -6,7 +6,6 @@ import logging
 from typing import Any
 
 from homeassistant.core import HomeAssistant
-from homeassistant.helpers.entity_platform import AddConfigEntryEntitiesCallback
 from homeassistant.components.sensor import SensorDeviceClass, SensorEntity
 from homeassistant.config_entries import ConfigEntry
 from homeassistant.core import HomeAssistant, ServiceCall, callback
@@ -17,9 +16,7 @@ from .types import BalenaDockerConfigEntry
 
 
 async def async_setup_entry(
-    hass: HomeAssistant,
-    config_entry: BalenaDockerConfigEntry,
-    async_add_entities: AddConfigEntryEntitiesCallback,
+    hass: HomeAssistant, config_entry: BalenaDockerConfigEntry, async_add_entities
 ) -> bool:
     """Set up the sensors defined below."""
     coordinator = config_entry.runtime_data.state_coordinator

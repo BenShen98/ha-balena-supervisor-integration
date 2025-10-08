@@ -40,7 +40,9 @@ _LOGGER = logging.getLogger(__name__)
 @websocket_api.websocket_command(
     {
         vol.Required("type"): "balena_docker/control_container",
-        vol.Required("entity_id"): cv.strict_entity_id,
+        vol.Required(
+            "entity_id"
+        ): str,  # `cv.strict_entity_id`` is not supported in older version
         vol.Required("action"): vol.In(
             ["start-service", "stop-service", "restart-service"]
         ),
