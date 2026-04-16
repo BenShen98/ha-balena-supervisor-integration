@@ -22,7 +22,7 @@ fi
 # Get the directory containing this script
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 
-SRC_CC="$SCRIPT_DIR/../custom_components"
+SRC_CC="$SCRIPT_DIR/../custom_components/balena_docker"
 DEST_CC="$INSTALL_DIR/custom_components/balena_docker"
 
 if [[ ! -d "$SRC_CC" ]]; then
