@@ -15,6 +15,7 @@ from .const import DOMAIN, DATA_BALENA
 from .coordinator import BalenaSupervisorStateCoordinator
 from .types import BalenaDockerConfigEntry
 
+_LOGGER = logging.getLogger(__name__)
 
 async def async_setup_entry(
     hass: HomeAssistant,
@@ -53,10 +54,10 @@ class BalenaBaseEntity(SensorEntity):
         self._attr_should_poll = False
         self._attr_device_class = SensorDeviceClass.ENUM
         self._attr_options = [
-            "Running",
-            "Stopping",
-            "Exited",
-            "Installing",
+            "running",
+            "stopping",
+            "exited",
+            "installing"
         ]
 
     @property
@@ -107,7 +108,16 @@ class BalenaContainerEntity(BalenaBaseEntity):
     def native_value(self) -> str | None:
         """Return the state of the container."""
         service_data = self.coordinator.get_service_data(self.service_name)
-        return service_data["status"] if service_data else None
+
+        if("status" not in service_data or isinstance(service_data["status"], str) == False):
+            return None
+
+        val = service_data["status"].lower()
+        if val in self._attr_options:
+            return val
+
+        _LOGGER.warning("Received unknown status '%s' for service '%s', return None", val, self.service_name)
+        return None
 
     @property
     def extra_state_attributes(self) -> Mapping[str, Any] | None:
